@@ -1,2 +1,4 @@
 github.com/go-chi/chi/v5 v5.0.10 h1:rLz5avzKpjqxrYwXNfmjkrYYXOyLJd37pz53UFHC6vk=
 github.com/go-chi/chi/v5 v5.0.10/go.mod h1:DslCQbL2OYiznFReuXYUmQ2hGd1aDpCnlMNITLSKoi8=
+github.com/go-chi/httplog/v2 v2.0.8 h1:UUhxHxGvUu4OVRfXbstuKW7kH8eTRABv57/3q1baTaQ=
+github.com/go-chi/httplog/v2 v2.0.8/go.mod h1:/XXdxicJsp4BA5fapgIC3VuTD+z0Z/VzukoB3VDc1YE=
