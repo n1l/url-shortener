@@ -42,7 +42,7 @@ func CreateShortedUrlHandler(w http.ResponseWriter, r *http.Request) {
 
 	hashId := getHashOfUrl(stringUri)
 	shortedUrls[hashId] = stringUri
-	resultStr := fmt.Sprintf("http://%s/%s\n", r.Host, hashId)
+	resultStr := fmt.Sprintf("http://%s/%s", r.Host, hashId)
 
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(resultStr))
