@@ -63,7 +63,7 @@ func GetUrlByHash(w http.ResponseWriter, r *http.Request) {
 
 	hashId := chi.URLParam(r, "id")
 	if url, ok := shortedUrls[hashId]; ok {
-		http.Redirect(w, r, url, http.StatusPermanentRedirect)
+		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 		return
 	}
 
