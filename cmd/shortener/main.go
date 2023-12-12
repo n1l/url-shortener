@@ -55,7 +55,7 @@ func CreateShortedURLHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(resultStr))
 }
 
-func GetURLByHash(w http.ResponseWriter, r *http.Request) {
+func GetURLByHashHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Bad Request!", http.StatusBadRequest)
 		return
@@ -81,7 +81,7 @@ func service() http.Handler {
 	router := chi.NewRouter()
 	router.Use(httplog.RequestLogger(logger))
 	router.Post("/", CreateShortedURLHandler)
-	router.Get("/{id}", GetURLByHash)
+	router.Get("/{id}", GetURLByHashHandler)
 
 	return router
 }
