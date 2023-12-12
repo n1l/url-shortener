@@ -22,13 +22,13 @@ import (
 
 var shortedUrls map[string]string = make(map[string]string)
 
-func getHashOfUrl(url string) string {
+func getHashOfURL(url string) string {
 	sum := md5.Sum([]byte(url))
 	encoded := base64.StdEncoding.EncodeToString(sum[:])
 	return strings.Replace(encoded, "/", "", -1)[:8]
 }
 
-func CreateShortedUrlHandler(w http.ResponseWriter, r *http.Request) {
+func CreateShortedURLHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	if r.Method != http.MethodPost {
 		http.Error(w, "Bad Request!", http.StatusBadRequest)
@@ -41,28 +41,28 @@ func CreateShortedUrlHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	stringUri := string(body)
-	if _, parseErr := url.ParseRequestURI(stringUri); parseErr != nil {
+	stringURI := string(body)
+	if _, parseErr := url.ParseRequestURI(stringURI); parseErr != nil {
 		http.Error(w, "Bad Request!", http.StatusBadRequest)
 		return
 	}
 
-	hashId := getHashOfUrl(stringUri)
-	shortedUrls[hashId] = stringUri
-	resultStr := fmt.Sprintf("http://%s/%s", r.Host, hashId)
+	hashID := getHashOfURL(stringURI)
+	shortedUrls[hashID] = stringURI
+	resultStr := fmt.Sprintf("http://%s/%s", r.Host, hashID)
 
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(resultStr))
 }
 
-func GetUrlByHash(w http.ResponseWriter, r *http.Request) {
+func GetURLByHash(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Bad Request!", http.StatusBadRequest)
 		return
 	}
 
-	hashId := chi.URLParam(r, "id")
-	if url, ok := shortedUrls[hashId]; ok {
+	hashID := chi.URLParam(r, "id")
+	if url, ok := shortedUrls[hashID]; ok {
 		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 		return
 	}
@@ -80,8 +80,8 @@ func service() http.Handler {
 
 	router := chi.NewRouter()
 	router.Use(httplog.RequestLogger(logger))
-	router.Post("/", CreateShortedUrlHandler)
-	router.Get("/{id}", GetUrlByHash)
+	router.Post("/", CreateShortedURLHandler)
+	router.Get("/{id}", GetURLByHash)
 
 	return router
 }
@@ -96,7 +96,8 @@ func main() {
 	go func() {
 		<-sig
 
-		shutdownCtx, _ := context.WithTimeout(serverCtx, 30*time.Second)
+		shutdownCtx, cancelFunc := context.WithTimeout(serverCtx, 30*time.Second)
+		defer cancelFunc()
 
 		go func() {
 			<-shutdownCtx.Done()
