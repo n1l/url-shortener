@@ -43,7 +43,7 @@ func CreateShortedURLHandler(w http.ResponseWriter, r *http.Request) {
 
 	stringURI := string(body)
 	if _, parseErr := url.ParseRequestURI(stringURI); parseErr != nil {
-		http.Error(w, "Bad Request!", http.StatusBadRequest)
+		http.Error(w, "Bad Request!"+" "+parseErr.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -67,7 +67,7 @@ func GetURLByHashHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Error(w, "Bad Request!", http.StatusBadRequest)
+	http.Error(w, fmt.Sprintf("Bad Request! id: '%s' not found", hashID), http.StatusBadRequest)
 }
 
 func service() http.Handler {
