@@ -50,15 +50,14 @@ func TestGetURLByHash(t *testing.T) {
 			assert.Equal(t, tc.expectedCode, w.Code, fmt.Sprintf("Код ответа не совпадает с ожидаемым - %d", w.Code))
 
 			if tc.expectedUrl != "" {
-				values := w.Header()["Location"]
-				url := values[len(values)-1]
+				url := w.Header().Get("Location")
 				assert.Equal(t, tc.expectedUrl, url, fmt.Sprintf("URL в 'location' не равен ожидаемому - %s", tc.expectedUrl))
 			}
 		})
 	}
 }
 
-func TestGetURLByHashMethods(t *testing.T) {
+func TestGetURLByHashStatusCodes(t *testing.T) {
 	testCases := []struct {
 		method       string
 		expectedCode int
