@@ -17,32 +17,32 @@ func TestGetURLByHash(t *testing.T) {
 	testCases := []struct {
 		method       string
 		expectedCode int
-		expectedUrl  string
+		expectedURL  string
 	}{
 		{
 			method:       http.MethodGet,
 			expectedCode: http.StatusBadRequest,
-			expectedUrl:  "",
+			expectedURL:  "",
 		},
 		{
 			method:       http.MethodGet,
 			expectedCode: http.StatusTemporaryRedirect,
-			expectedUrl:  "http://google.com",
+			expectedURL:  "http://google.com",
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.method, func(t *testing.T) {
-			hashId := getHashOfURL(tc.expectedUrl)
-			if tc.expectedUrl != "" {
-				shortedUrls[hashId] = tc.expectedUrl
+			hashID := getHashOfURL(tc.expectedURL)
+			if tc.expectedURL != "" {
+				shortedUrls[hashID] = tc.expectedURL
 			}
 
 			w := httptest.NewRecorder()
 			r := httptest.NewRequest("GET", "/{id}", nil)
 
 			rctx := chi.NewRouteContext()
-			rctx.URLParams.Add("id", hashId)
+			rctx.URLParams.Add("id", hashID)
 
 			r = r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, rctx))
 
@@ -50,9 +50,9 @@ func TestGetURLByHash(t *testing.T) {
 
 			assert.Equal(t, tc.expectedCode, w.Code, fmt.Sprintf("Код ответа не совпадает с ожидаемым - %d", w.Code))
 
-			if tc.expectedUrl != "" {
+			if tc.expectedURL != "" {
 				url := w.Header().Get("Location")
-				assert.Equal(t, tc.expectedUrl, url, fmt.Sprintf("URL в 'location' не равен ожидаемому - %s", tc.expectedUrl))
+				assert.Equal(t, tc.expectedURL, url, fmt.Sprintf("URL в 'location' не равен ожидаемому - %s", tc.expectedURL))
 			}
 		})
 	}
