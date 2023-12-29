@@ -18,6 +18,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/httplog/v2"
+
+	"github.com/n1l/url-shortener/internal/config"
 )
 
 var shortedUrls map[string]string = make(map[string]string)
@@ -49,7 +51,7 @@ func CreateShortedURLHandler(w http.ResponseWriter, r *http.Request) {
 
 	hashID := getHashOfURL(stringURI)
 	shortedUrls[hashID] = stringURI
-	resultStr := fmt.Sprintf("http://%s/%s", r.Host, hashID)
+	resultStr := fmt.Sprintf("http://%s/%s", config.Options.PublicHost, hashID)
 
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(resultStr))
@@ -87,7 +89,9 @@ func service() http.Handler {
 }
 
 func main() {
-	server := &http.Server{Addr: "0.0.0.0:8080", Handler: service()}
+	config.ParseOptions()
+
+	server := &http.Server{Addr: config.Options.PrivateHost, Handler: service()}
 
 	serverCtx, serverStopCtx := context.WithCancel(context.Background())
 

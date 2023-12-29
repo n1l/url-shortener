@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/n1l/url-shortener/internal/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -97,6 +98,8 @@ func TestGetURLByHashStatusCodes(t *testing.T) {
 }
 
 func TestCreateShortedUrl(t *testing.T) {
+	config.Options.PublicHost = "example.com"
+
 	testCases := []struct {
 		method       string
 		body         string
