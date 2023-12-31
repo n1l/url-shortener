@@ -98,7 +98,7 @@ func TestGetURLByHashStatusCodes(t *testing.T) {
 }
 
 func TestCreateShortedUrl(t *testing.T) {
-	config.Options.PublicHost = "example.com"
+	config.Options.PublicHost = "http://example.com"
 
 	testCases := []struct {
 		method       string
