@@ -7,17 +7,17 @@ import (
 	"github.com/caarlos0/env/v6"
 )
 
-var Options struct {
+type Options struct {
 	PrivateHost string `env:"SERVER_ADDRESS"`
 	PublicHost  string `env:"BASE_URL"`
 }
 
-func ParseOptions() {
-	flag.StringVar(&Options.PrivateHost, "a", "localhost:8080", "The service address at start")
-	flag.StringVar(&Options.PublicHost, "b", "http://localhost:8080", "The shortener result base address")
+func ParseOptions(ops *Options) {
+	flag.StringVar(&ops.PrivateHost, "a", "localhost:8080", "The service address at start")
+	flag.StringVar(&ops.PublicHost, "b", "http://localhost:8080", "The shortener result base address")
 	flag.Parse()
 
-	err := env.Parse(&Options)
+	err := env.Parse(ops)
 	if err != nil {
 		log.Print("Failed to read environment variables")
 	}

@@ -22,6 +22,8 @@ import (
 	"github.com/n1l/url-shortener/internal/config"
 )
 
+var options config.Options
+
 var shortedUrls map[string]string = make(map[string]string)
 
 func getHashOfURL(url string) string {
@@ -51,19 +53,21 @@ func CreateShortedURLHandler(w http.ResponseWriter, r *http.Request) {
 
 	hashID := getHashOfURL(stringURI)
 	shortedUrls[hashID] = stringURI
-	resultStr := fmt.Sprintf("%s/%s", config.Options.PublicHost, hashID)
+	resultStr := fmt.Sprintf("%s/%s", options.PublicHost, hashID)
 
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(resultStr))
 }
 
 func GetURLByHashHandler(w http.ResponseWriter, r *http.Request) {
+	const parameterName = "id"
+
 	if r.Method != http.MethodGet {
 		http.Error(w, "Bad Request!", http.StatusBadRequest)
 		return
 	}
 
-	hashID := chi.URLParam(r, "id")
+	hashID := chi.URLParam(r, parameterName)
 	if url, ok := shortedUrls[hashID]; ok {
 		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 		return
@@ -72,7 +76,7 @@ func GetURLByHashHandler(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, fmt.Sprintf("Bad Request! id: '%s' not found", hashID), http.StatusBadRequest)
 }
 
-func service() http.Handler {
+func serverHandler() http.Handler {
 	logger := httplog.NewLogger("url-shortener-logger", httplog.Options{
 		LogLevel:         slog.LevelDebug,
 		Concise:          true,
@@ -89,9 +93,9 @@ func service() http.Handler {
 }
 
 func main() {
-	config.ParseOptions()
+	config.ParseOptions(&options)
 
-	server := &http.Server{Addr: config.Options.PrivateHost, Handler: service()}
+	server := &http.Server{Addr: options.PrivateHost, Handler: serverHandler()}
 
 	serverCtx, serverStopCtx := context.WithCancel(context.Background())
 
