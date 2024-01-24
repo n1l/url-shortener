@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -17,9 +16,9 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/httplog/v2"
 
 	"github.com/n1l/url-shortener/internal/config"
+	"github.com/n1l/url-shortener/internal/logger"
 )
 
 var options config.Options
@@ -77,23 +76,16 @@ func GetURLByHashHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func serverHandler() http.Handler {
-	logger := httplog.NewLogger("url-shortener-logger", httplog.Options{
-		LogLevel:         slog.LevelDebug,
-		Concise:          true,
-		RequestHeaders:   true,
-		MessageFieldName: "message",
-	})
-
 	router := chi.NewRouter()
-	router.Use(httplog.RequestLogger(logger))
-	router.Post("/", CreateShortedURLHandler)
-	router.Get("/{id}", GetURLByHashHandler)
+	router.Post("/", logger.RequestLogger(CreateShortedURLHandler))
+	router.Get("/{id}", logger.RequestLogger(GetURLByHashHandler))
 
 	return router
 }
 
 func main() {
 	config.ParseOptions(&options)
+	logger.Initialize("Debug")
 
 	server := &http.Server{Addr: options.PrivateHost, Handler: serverHandler()}
 
