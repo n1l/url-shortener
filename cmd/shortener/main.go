@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -19,6 +20,7 @@ import (
 
 	"github.com/n1l/url-shortener/internal/config"
 	"github.com/n1l/url-shortener/internal/logger"
+	"github.com/n1l/url-shortener/internal/models"
 )
 
 var options config.Options
@@ -29,6 +31,39 @@ func getHashOfURL(url string) string {
 	sum := md5.Sum([]byte(url))
 	encoded := base64.StdEncoding.EncodeToString(sum[:])
 	return strings.Replace(encoded, "/", "", -1)[:8]
+}
+
+func CreateShortedURLfromJSONHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+	if r.Method != http.MethodPost {
+		http.Error(w, "Bad Request!", http.StatusBadRequest)
+		return
+	}
+
+	var req models.CreateShortenRequest
+	dec := json.NewDecoder(r.Body)
+	if err := dec.Decode(&req); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	stringURI := req.Url
+	hashID := getHashOfURL(stringURI)
+	shortedUrls[hashID] = stringURI
+	resultStr := fmt.Sprintf("%s/%s", options.PublicHost, hashID)
+
+	resp := models.CreateShortenResponse{
+		Url: resultStr,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+
+	enc := json.NewEncoder(w)
+	if err := enc.Encode(resp); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 }
 
 func CreateShortedURLHandler(w http.ResponseWriter, r *http.Request) {
@@ -77,6 +112,7 @@ func GetURLByHashHandler(w http.ResponseWriter, r *http.Request) {
 
 func serverHandler() http.Handler {
 	router := chi.NewRouter()
+	router.Post("/api/shorten", logger.RequestLogger(CreateShortedURLfromJSONHandler))
 	router.Post("/", logger.RequestLogger(CreateShortedURLHandler))
 	router.Get("/{id}", logger.RequestLogger(GetURLByHashHandler))
 

@@ -159,3 +159,68 @@ func TestCreateShortedUrl(t *testing.T) {
 		})
 	}
 }
+
+func TestCreateShortedUrlJSON(t *testing.T) {
+	options.PublicHost = "http://example.com"
+
+	testCases := []struct {
+		method       string
+		body         string
+		expectedCode int
+		expectedBody string
+	}{
+		{
+			method:       http.MethodGet,
+			expectedCode: http.StatusBadRequest,
+			expectedBody: "",
+		},
+		{
+			method:       http.MethodPut,
+			expectedCode: http.StatusBadRequest,
+			expectedBody: "",
+		},
+		{
+			method:       http.MethodDelete,
+			expectedCode: http.StatusBadRequest,
+			expectedBody: "",
+		},
+		{
+			method:       http.MethodHead,
+			expectedCode: http.StatusBadRequest,
+			expectedBody: "",
+		},
+		{
+			method:       http.MethodPatch,
+			expectedCode: http.StatusBadRequest,
+			expectedBody: "",
+		},
+		{
+			method:       http.MethodPost,
+			body:         `{"url":"http://google.com"}`,
+			expectedCode: http.StatusCreated,
+			expectedBody: `{"result":"http://example.com/x7kg9X5V"}`,
+		},
+		{
+			method:       http.MethodPost,
+			body:         `{"url":"http://eynt73dlmnjj3b.biz/t0pwb"}`,
+			expectedCode: http.StatusCreated,
+			expectedBody: `{"result":"http://example.com/HppQetTZ"}`,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.method, func(t *testing.T) {
+			body := strings.NewReader(tc.body)
+			r := httptest.NewRequest(tc.method, "/api/shorten", body)
+			w := httptest.NewRecorder()
+
+			CreateShortedURLfromJSONHandler(w, r)
+
+			assert.Equal(t, tc.expectedCode, w.Code, "Код ответа не совпадает с ожидаемым")
+			if tc.expectedBody != "" {
+				bodyStr := w.Body.String()
+				assert.JSONEq(t, tc.expectedBody, bodyStr, "Тело ответа не совпадает с ожидаемым"+" "+bodyStr)
+			}
+		})
+	}
+}
