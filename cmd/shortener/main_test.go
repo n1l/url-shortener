@@ -196,15 +196,15 @@ func TestCreateShortedUrlJSON(t *testing.T) {
 		},
 		{
 			method:       http.MethodPost,
-			body:         `{"url":"http://google.com"}`,
+			body:         `{ "url" : "http://google.com" }`,
 			expectedCode: http.StatusCreated,
-			expectedBody: `{"result":"http://example.com/x7kg9X5V"}`,
+			expectedBody: `{ "result" : "http://example.com/x7kg9X5V" }`,
 		},
 		{
 			method:       http.MethodPost,
-			body:         `{"url":"http://eynt73dlmnjj3b.biz/t0pwb"}`,
+			body:         `{ "url" : "http://eynt73dlmnjj3b.biz/t0pwb" }`,
 			expectedCode: http.StatusCreated,
-			expectedBody: `{"result":"http://example.com/HppQetTZ"}`,
+			expectedBody: `{ "result" : "http://example.com/HppQetTZ" }`,
 		},
 	}
 
