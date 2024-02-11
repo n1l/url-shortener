@@ -49,7 +49,7 @@ func Initialize(level string) error {
 	return nil
 }
 
-func RequestLogger(h http.HandlerFunc) http.HandlerFunc {
+func RequestLogger(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		Log.Debug("got incoming HTTP request",
 			zap.String("method", r.Method),

@@ -110,11 +110,42 @@ func GetURLByHashHandler(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, fmt.Sprintf("Bad Request! id: '%s' not found", hashID), http.StatusBadRequest)
 }
 
+func gzipMiddleware(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ow := w
+
+		acceptEncoding := r.Header.Get("Accept-Encoding")
+		supportsGzip := strings.Contains(acceptEncoding, "gzip")
+		if supportsGzip {
+			cw := newCompressWriter(w)
+			ow = cw
+			defer cw.Close()
+		}
+
+		contentEncoding := r.Header.Get("Content-Encoding")
+		sendsGzip := strings.Contains(contentEncoding, "gzip")
+		if sendsGzip {
+			cr, err := newCompressReader(r.Body)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			r.Body = cr
+			defer cr.Close()
+		}
+
+		h.ServeHTTP(ow, r)
+	})
+}
+
 func serverHandler() http.Handler {
 	router := chi.NewRouter()
-	router.Post("/api/shorten", logger.RequestLogger(CreateShortedURLfromJSONHandler))
-	router.Post("/", logger.RequestLogger(CreateShortedURLHandler))
-	router.Get("/{id}", logger.RequestLogger(GetURLByHashHandler))
+	router.Use(gzipMiddleware)
+	router.Use(logger.RequestLogger)
+
+	router.Post("/api/shorten", CreateShortedURLfromJSONHandler)
+	router.Post("/", CreateShortedURLHandler)
+	router.Get("/{id}", GetURLByHashHandler)
 
 	return router
 }
