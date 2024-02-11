@@ -141,7 +141,7 @@ func gzipMiddleware(h http.Handler) http.Handler {
 func serverHandler() http.Handler {
 	router := chi.NewRouter()
 	router.Use(gzipMiddleware)
-	router.Use(logger.RequestLogger)
+	router.Use(logger.RequestLoggerMiddleware)
 
 	router.Post("/api/shorten", CreateShortedURLfromJSONHandler)
 	router.Post("/", CreateShortedURLHandler)
