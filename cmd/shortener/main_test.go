@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"testing"
 
@@ -166,8 +165,6 @@ func TestCreateShortedUrl(t *testing.T) {
 			}
 		})
 	}
-
-	os.Remove(options.StoragePath)
 }
 
 func TestCreateShortedUrlJSON(t *testing.T) {
