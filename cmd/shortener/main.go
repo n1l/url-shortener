@@ -41,10 +41,15 @@ func loadToMemory(fname string) error {
 	return nil
 }
 
-func getHashOfURLAndPersist(url string) string {
+func getHashOfURL(url string) string {
 	sum := md5.Sum([]byte(url))
 	encoded := base64.StdEncoding.EncodeToString(sum[:])
 	hash := strings.Replace(encoded, "/", "", -1)[:8]
+	return hash
+}
+
+func getHashOfURLAndPersist(url string) string {
+	hash := getHashOfURL(url)
 	saveInMemory(url, hash)
 	saveOnDisk(url, hash)
 	return hash
@@ -77,12 +82,12 @@ func CreateShortedURLfromJSONHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	stringURI := req.Url
+	stringURI := req.URL
 	hashID := getHashOfURLAndPersist(stringURI)
 	resultStr := fmt.Sprintf("%s/%s", options.PublicHost, hashID)
 
 	resp := models.CreateShortenResponse{
-		Url: resultStr,
+		URL: resultStr,
 	}
 
 	w.Header().Set("Content-Type", "application/json")

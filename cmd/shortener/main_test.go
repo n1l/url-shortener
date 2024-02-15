@@ -8,10 +8,12 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/n1l/url-shortener/internal/database"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -36,9 +38,9 @@ func TestGetURLByHash(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.method, func(t *testing.T) {
-			var hashID string
+			hashID := getHashOfURL(tc.expectedURL)
 			if tc.expectedURL != "" {
-				hashID = getHashOfURLAndPersist(tc.expectedURL)
+				shortedUrls[hashID] = tc.expectedURL
 			}
 
 			w := httptest.NewRecorder()
@@ -102,6 +104,8 @@ func TestGetURLByHashStatusCodes(t *testing.T) {
 
 func TestCreateShortedUrl(t *testing.T) {
 	options.PublicHost = "http://example.com"
+	options.StoragePath = "test"
+	dbProducer, _ = database.NewProducer(options.StoragePath)
 
 	testCases := []struct {
 		method       string
@@ -162,6 +166,8 @@ func TestCreateShortedUrl(t *testing.T) {
 			}
 		})
 	}
+
+	os.Remove(options.StoragePath)
 }
 
 func TestCreateShortedUrlJSON(t *testing.T) {
