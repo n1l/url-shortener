@@ -1,9 +1,9 @@
 package models
 
 type CreateShortenRequest struct {
-	Url string `json:"url"`
+	URL string `json:"url"`
 }
 
 type CreateShortenResponse struct {
-	Url string `json:"result"`
+	URL string `json:"result"`
 }
