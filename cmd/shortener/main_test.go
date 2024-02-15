@@ -36,9 +36,9 @@ func TestGetURLByHash(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.method, func(t *testing.T) {
-			hashID := getHashOfURL(tc.expectedURL)
+			var hashID string
 			if tc.expectedURL != "" {
-				shortedUrls[hashID] = tc.expectedURL
+				hashID = getHashOfURLAndPersist(tc.expectedURL)
 			}
 
 			w := httptest.NewRecorder()

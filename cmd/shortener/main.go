@@ -19,6 +19,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/n1l/url-shortener/internal/config"
+	"github.com/n1l/url-shortener/internal/database"
 	"github.com/n1l/url-shortener/internal/logger"
 	"github.com/n1l/url-shortener/internal/models"
 )
@@ -26,11 +27,40 @@ import (
 var options config.Options
 
 var shortedUrls map[string]string = make(map[string]string)
+var dbProducer *database.Producer
 
-func getHashOfURL(url string) string {
+func loadToMemory(fname string) error {
+	recs, err := database.Load(fname)
+	if err != nil {
+		return err
+	}
+
+	for _, rec := range recs {
+		shortedUrls[rec.ShortURL] = rec.OriginalURL
+	}
+	return nil
+}
+
+func getHashOfURLAndPersist(url string) string {
 	sum := md5.Sum([]byte(url))
 	encoded := base64.StdEncoding.EncodeToString(sum[:])
-	return strings.Replace(encoded, "/", "", -1)[:8]
+	hash := strings.Replace(encoded, "/", "", -1)[:8]
+	saveInMemory(url, hash)
+	saveOnDisk(url, hash)
+	return hash
+}
+
+func saveInMemory(url string, hash string) {
+	shortedUrls[hash] = url
+}
+
+func saveOnDisk(url string, hash string) error {
+	urlReord := database.URLRecord{
+		ShortURL:    hash,
+		OriginalURL: url,
+	}
+
+	return dbProducer.Write(&urlReord)
 }
 
 func CreateShortedURLfromJSONHandler(w http.ResponseWriter, r *http.Request) {
@@ -48,8 +78,7 @@ func CreateShortedURLfromJSONHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	stringURI := req.Url
-	hashID := getHashOfURL(stringURI)
-	shortedUrls[hashID] = stringURI
+	hashID := getHashOfURLAndPersist(stringURI)
 	resultStr := fmt.Sprintf("%s/%s", options.PublicHost, hashID)
 
 	resp := models.CreateShortenResponse{
@@ -85,8 +114,7 @@ func CreateShortedURLHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hashID := getHashOfURL(stringURI)
-	shortedUrls[hashID] = stringURI
+	hashID := getHashOfURLAndPersist(stringURI)
 	resultStr := fmt.Sprintf("%s/%s", options.PublicHost, hashID)
 
 	w.WriteHeader(http.StatusCreated)
@@ -140,8 +168,8 @@ func gzipMiddleware(h http.Handler) http.Handler {
 
 func serverHandler() http.Handler {
 	router := chi.NewRouter()
-	router.Use(gzipMiddleware)
 	router.Use(logger.RequestLoggerMiddleware)
+	router.Use(gzipMiddleware)
 
 	router.Post("/api/shorten", CreateShortedURLfromJSONHandler)
 	router.Post("/", CreateShortedURLHandler)
@@ -181,8 +209,19 @@ func main() {
 		serverStopCtx()
 	}()
 
+	err := loadToMemory(options.StoragePath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	prod, err := database.NewProducer(options.StoragePath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	dbProducer = prod
+
 	// Run the server
-	err := server.ListenAndServe()
+	err = server.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}
