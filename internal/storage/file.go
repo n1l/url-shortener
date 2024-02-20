@@ -49,8 +49,8 @@ func (s *FileStorage) Get(hash string) (string, bool) {
 	return s.cache.Get(hash)
 }
 
-func (p *FileStorage) Close() error {
-	return p.file.Close()
+func (s *FileStorage) Close() error {
+	return s.file.Close()
 }
 
 func updateCache(s *FileStorage) error {

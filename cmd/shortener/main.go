@@ -33,7 +33,7 @@ func serverHandler(services *di.Services) http.Handler {
 func main() {
 	var options config.Options
 	config.ParseOptions(&options)
-	logger.Initialize("Debug")
+	logger.Initialize(options.LogLevel)
 
 	fstorage, err := storage.NewFileStorage(options.StoragePath)
 	if err != nil {
