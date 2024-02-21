@@ -1,18 +1,35 @@
 package main
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/n1l/url-shortener/internal/config"
+	"github.com/n1l/url-shortener/internal/hasher"
+	"github.com/n1l/url-shortener/internal/models"
+	"github.com/n1l/url-shortener/internal/service"
+	"github.com/n1l/url-shortener/internal/storage"
+	"github.com/n1l/url-shortener/internal/zipper"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestGetURLByHash(t *testing.T) {
+func TestGetURLByHashHandler(t *testing.T) {
+	options := config.Options{
+		PublicHost: "http://example.com",
+	}
+
+	storage := storage.NewInMemoryStorage()
+	services := service.NewService(&options, storage, storage)
+
 	testCases := []struct {
 		method       string
 		expectedCode int
@@ -32,9 +49,12 @@ func TestGetURLByHash(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.method, func(t *testing.T) {
-			hashID := getHashOfURL(tc.expectedURL)
+			hashID := hasher.GetHashOfURL(tc.expectedURL)
 			if tc.expectedURL != "" {
-				shortedUrls[hashID] = tc.expectedURL
+				storage.Save(&models.URLRecord{
+					ShortURL:    hashID,
+					OriginalURL: tc.expectedURL,
+				})
 			}
 
 			w := httptest.NewRecorder()
@@ -45,7 +65,7 @@ func TestGetURLByHash(t *testing.T) {
 
 			r = r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, rctx))
 
-			GetURLByHashHandler(w, r)
+			services.GetURLByHashHandler(w, r)
 
 			assert.Equal(t, tc.expectedCode, w.Code, fmt.Sprintf("Код ответа не совпадает с ожидаемым - %d", w.Code))
 
@@ -57,7 +77,14 @@ func TestGetURLByHash(t *testing.T) {
 	}
 }
 
-func TestGetURLByHashStatusCodes(t *testing.T) {
+func TestGetURLByHashHandlerStatusCodes(t *testing.T) {
+	options := config.Options{
+		PublicHost: "http://example.com",
+	}
+
+	storage := storage.NewInMemoryStorage()
+	services := service.NewService(&options, storage, storage)
+
 	testCases := []struct {
 		method       string
 		expectedCode int
@@ -89,7 +116,7 @@ func TestGetURLByHashStatusCodes(t *testing.T) {
 			r := httptest.NewRequest(tc.method, "/someId", nil)
 			w := httptest.NewRecorder()
 
-			GetURLByHashHandler(w, r)
+			services.GetURLByHashHandler(w, r)
 
 			assert.Equal(t, tc.expectedCode, w.Code, "Код ответа не совпадает с ожидаемым")
 		})
@@ -97,7 +124,12 @@ func TestGetURLByHashStatusCodes(t *testing.T) {
 }
 
 func TestCreateShortedUrl(t *testing.T) {
-	options.PublicHost = "http://example.com"
+	options := config.Options{
+		PublicHost: "http://example.com",
+	}
+
+	storage := storage.NewInMemoryStorage()
+	services := service.NewService(&options, storage, storage)
 
 	testCases := []struct {
 		method       string
@@ -150,7 +182,7 @@ func TestCreateShortedUrl(t *testing.T) {
 			r := httptest.NewRequest(tc.method, "/", body)
 			w := httptest.NewRecorder()
 
-			CreateShortedURLHandler(w, r)
+			services.CreateShortedURLHandler(w, r)
 
 			assert.Equal(t, tc.expectedCode, w.Code, "Код ответа не совпадает с ожидаемым")
 			if tc.expectedBody != "" {
@@ -158,4 +190,136 @@ func TestCreateShortedUrl(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCreateShortedUrlJSON(t *testing.T) {
+	options := config.Options{
+		PublicHost: "http://example.com",
+	}
+
+	storage := storage.NewInMemoryStorage()
+	services := service.NewService(&options, storage, storage)
+
+	testCases := []struct {
+		method       string
+		body         string
+		expectedCode int
+		expectedBody string
+	}{
+		{
+			method:       http.MethodGet,
+			expectedCode: http.StatusBadRequest,
+			expectedBody: "",
+		},
+		{
+			method:       http.MethodPut,
+			expectedCode: http.StatusBadRequest,
+			expectedBody: "",
+		},
+		{
+			method:       http.MethodDelete,
+			expectedCode: http.StatusBadRequest,
+			expectedBody: "",
+		},
+		{
+			method:       http.MethodHead,
+			expectedCode: http.StatusBadRequest,
+			expectedBody: "",
+		},
+		{
+			method:       http.MethodPatch,
+			expectedCode: http.StatusBadRequest,
+			expectedBody: "",
+		},
+		{
+			method:       http.MethodPost,
+			body:         `{ "url" : "http://google.com" }`,
+			expectedCode: http.StatusCreated,
+			expectedBody: `{ "result" : "http://example.com/x7kg9X5V" }`,
+		},
+		{
+			method:       http.MethodPost,
+			body:         `{ "url" : "http://eynt73dlmnjj3b.biz/t0pwb" }`,
+			expectedCode: http.StatusCreated,
+			expectedBody: `{ "result" : "http://example.com/HppQetTZ" }`,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.method, func(t *testing.T) {
+			body := strings.NewReader(tc.body)
+			r := httptest.NewRequest(tc.method, "/api/shorten", body)
+			w := httptest.NewRecorder()
+
+			services.CreateShortedURLfromJSONHandler(w, r)
+
+			assert.Equal(t, tc.expectedCode, w.Code, "Код ответа не совпадает с ожидаемым")
+			if tc.expectedBody != "" {
+				bodyStr := w.Body.String()
+				assert.JSONEq(t, tc.expectedBody, bodyStr, "Тело ответа не совпадает с ожидаемым"+" "+bodyStr)
+			}
+		})
+	}
+}
+
+func TestGzipCompression(t *testing.T) {
+	options := config.Options{
+		PublicHost: "http://example.com",
+	}
+
+	storage := storage.NewInMemoryStorage()
+	services := service.NewService(&options, storage, storage)
+
+	handler := http.HandlerFunc(services.CreateShortedURLfromJSONHandler)
+
+	srv := httptest.NewServer(zipper.GzipMiddleware(handler))
+	defer srv.Close()
+
+	requestBody := `{ "url" : "http://google.com" }`
+
+	successBody := `{ "result" : "http://example.com/x7kg9X5V" }`
+
+	t.Run("sends_gzip", func(t *testing.T) {
+		buf := bytes.NewBuffer(nil)
+		zb := gzip.NewWriter(buf)
+		_, err := zb.Write([]byte(requestBody))
+		require.NoError(t, err)
+		err = zb.Close()
+		require.NoError(t, err)
+
+		r := httptest.NewRequest("POST", srv.URL, buf)
+		r.RequestURI = ""
+		r.Header.Set("Content-Encoding", "gzip")
+
+		resp, err := http.DefaultClient.Do(r)
+		require.NoError(t, err)
+		require.Equal(t, http.StatusCreated, resp.StatusCode)
+
+		defer resp.Body.Close()
+
+		b, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		require.JSONEq(t, successBody, string(b))
+	})
+
+	t.Run("accepts_gzip", func(t *testing.T) {
+		buf := bytes.NewBufferString(requestBody)
+		r := httptest.NewRequest("POST", srv.URL, buf)
+		r.RequestURI = ""
+		r.Header.Set("Accept-Encoding", "gzip")
+
+		resp, err := http.DefaultClient.Do(r)
+		require.NoError(t, err)
+		require.Equal(t, http.StatusCreated, resp.StatusCode)
+
+		defer resp.Body.Close()
+
+		zr, err := gzip.NewReader(resp.Body)
+		require.NoError(t, err)
+
+		b, err := io.ReadAll(zr)
+		require.NoError(t, err)
+
+		require.JSONEq(t, successBody, string(b))
+	})
 }
