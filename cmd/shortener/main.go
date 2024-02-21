@@ -12,13 +12,13 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/n1l/url-shortener/internal/config"
-	"github.com/n1l/url-shortener/internal/di"
 	"github.com/n1l/url-shortener/internal/logger"
+	"github.com/n1l/url-shortener/internal/service"
 	"github.com/n1l/url-shortener/internal/storage"
 	"github.com/n1l/url-shortener/internal/zipper"
 )
 
-func serverHandler(services *di.Services) http.Handler {
+func serverHandler(services *service.Service) http.Handler {
 	router := chi.NewRouter()
 	router.Use(logger.RequestLoggerMiddleware)
 	router.Use(zipper.GzipMiddleware)
@@ -41,7 +41,7 @@ func main() {
 	}
 	defer fstorage.Close()
 
-	services := di.NewServices(&options, fstorage, fstorage)
+	services := service.NewService(&options, fstorage, fstorage)
 
 	server := &http.Server{Addr: options.PrivateHost, Handler: serverHandler(services)}
 

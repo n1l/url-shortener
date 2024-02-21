@@ -25,6 +25,8 @@ func (s *InMemoryStorage) Save(rec *models.URLRecord) error {
 }
 
 func (s *InMemoryStorage) Get(hash string) (string, bool) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	val, ok := s.cache[hash]
 	if ok {
 		return val.OriginalURL, ok
@@ -32,6 +34,6 @@ func (s *InMemoryStorage) Get(hash string) (string, bool) {
 	return "", ok
 }
 
-func saveInternal(s *InMemoryStorage, rec *models.URLRecord) {
+func (s *InMemoryStorage) saveInternal(rec *models.URLRecord) {
 	s.cache[rec.ShortURL] = rec
 }

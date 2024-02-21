@@ -1,4 +1,4 @@
-package di
+package service
 
 import (
 	"encoding/json"
@@ -12,7 +12,7 @@ import (
 	"github.com/n1l/url-shortener/internal/models"
 )
 
-func (s *Services) GetURLByHashHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Service) GetURLByHashHandler(w http.ResponseWriter, r *http.Request) {
 	const parameterName = "id"
 
 	if r.Method != http.MethodGet {
@@ -31,7 +31,7 @@ func (s *Services) GetURLByHashHandler(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, fmt.Sprintf("Bad Request! id: '%s' not found", hashID), http.StatusBadRequest)
 }
 
-func (s *Services) CreateShortedURLHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Service) CreateShortedURLHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	if r.Method != http.MethodPost {
 		http.Error(w, "Bad Request!", http.StatusBadRequest)
@@ -66,7 +66,7 @@ func (s *Services) CreateShortedURLHandler(w http.ResponseWriter, r *http.Reques
 	w.Write([]byte(resultStr))
 }
 
-func (s *Services) CreateShortedURLfromJSONHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Service) CreateShortedURLfromJSONHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	if r.Method != http.MethodPost {
 		http.Error(w, "Bad Request!", http.StatusBadRequest)

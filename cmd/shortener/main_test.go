@@ -13,9 +13,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/n1l/url-shortener/internal/config"
-	"github.com/n1l/url-shortener/internal/di"
 	"github.com/n1l/url-shortener/internal/hasher"
 	"github.com/n1l/url-shortener/internal/models"
+	"github.com/n1l/url-shortener/internal/service"
 	"github.com/n1l/url-shortener/internal/storage"
 	"github.com/n1l/url-shortener/internal/zipper"
 	"github.com/stretchr/testify/assert"
@@ -28,7 +28,7 @@ func TestGetURLByHashHandler(t *testing.T) {
 	}
 
 	storage := storage.NewInMemoryStorage()
-	services := di.NewServices(&options, storage, storage)
+	services := service.NewService(&options, storage, storage)
 
 	testCases := []struct {
 		method       string
@@ -83,7 +83,7 @@ func TestGetURLByHashHandlerStatusCodes(t *testing.T) {
 	}
 
 	storage := storage.NewInMemoryStorage()
-	services := di.NewServices(&options, storage, storage)
+	services := service.NewService(&options, storage, storage)
 
 	testCases := []struct {
 		method       string
@@ -129,7 +129,7 @@ func TestCreateShortedUrl(t *testing.T) {
 	}
 
 	storage := storage.NewInMemoryStorage()
-	services := di.NewServices(&options, storage, storage)
+	services := service.NewService(&options, storage, storage)
 
 	testCases := []struct {
 		method       string
@@ -198,7 +198,7 @@ func TestCreateShortedUrlJSON(t *testing.T) {
 	}
 
 	storage := storage.NewInMemoryStorage()
-	services := di.NewServices(&options, storage, storage)
+	services := service.NewService(&options, storage, storage)
 
 	testCases := []struct {
 		method       string
@@ -268,7 +268,7 @@ func TestGzipCompression(t *testing.T) {
 	}
 
 	storage := storage.NewInMemoryStorage()
-	services := di.NewServices(&options, storage, storage)
+	services := service.NewService(&options, storage, storage)
 
 	handler := http.HandlerFunc(services.CreateShortedURLfromJSONHandler)
 

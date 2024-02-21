@@ -1,4 +1,4 @@
-package di
+package service
 
 import "github.com/n1l/url-shortener/internal/models"
 

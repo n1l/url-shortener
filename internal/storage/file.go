@@ -23,19 +23,19 @@ func NewFileStorage(filename string) (*FileStorage, error) {
 		return nil, err
 	}
 
-	storage := &FileStorage{
+	s := &FileStorage{
 		cache:   NewInMemoryStorage(),
 		file:    file,
 		encoder: json.NewEncoder(file),
 		decoder: json.NewDecoder(file),
 	}
 
-	err = updateCache(storage)
+	err = s.updateFromFile()
 	if err != nil {
 		return nil, err
 	}
 
-	return storage, nil
+	return s, nil
 }
 
 func (s *FileStorage) Save(rec *models.URLRecord) error {
@@ -53,22 +53,22 @@ func (s *FileStorage) Close() error {
 	return s.file.Close()
 }
 
-func updateCache(s *FileStorage) error {
+func (s *FileStorage) updateFromFile() error {
 
 	for {
 		var rec models.URLRecord
-		if err := readFromFile(s, &rec); err == io.EOF {
+		if err := s.readFromFile(&rec); err == io.EOF {
 			break
 		} else if err != nil {
 			return err
 		}
 
-		saveInternal(s.cache, &rec)
+		s.cache.saveInternal(&rec)
 	}
 
 	return nil
 }
 
-func readFromFile(storage *FileStorage, rec *models.URLRecord) error {
-	return storage.decoder.Decode(&rec)
+func (s *FileStorage) readFromFile(rec *models.URLRecord) error {
+	return s.decoder.Decode(&rec)
 }
